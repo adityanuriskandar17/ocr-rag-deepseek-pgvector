@@ -1,0 +1,42 @@
+# Core
+python-dotenv==1.0.1
+pydantic==2.10.4
+pydantic-settings==2.7.0
+
+# API + UI
+fastapi==0.115.6
+uvicorn==0.34.0
+streamlit==1.41.1
+python-multipart==0.0.20
+
+# OCR CPU (tanpa GPU)
+pymupdf==1.27.2
+opencv-python==4.10.0.84
+pillow==11.1.0
+rapidocr-onnxruntime==1.4.2
+onnxruntime==1.20.1
+
+# RAG / LangChain (versi lentur biar cocok Python 3.12)
+langchain>=0.3.14
+langchain-core>=0.3.29
+langchain-community>=0.3.14
+langchain-openai>=0.2.14
+langchain-huggingface>=0.1.2
+langchain-text-splitters>=0.3.0
+langchain-postgres>=0.0.10
+
+# Embeddings lokal CPU (DeepSeek tidak ada embedding API)
+sentence-transformers==3.3.1
+transformers==4.48.0
+# install torch CPU secara terpisah dulu (lihat README):
+# pip install torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+torch==2.5.1
+
+# Vector DB
+pgvector==0.3.6
+psycopg[binary,pool]==3.2.3
+SQLAlchemy==2.0.36
+
+# Utils
+tqdm==4.67.1
+pytest==8.3.4
