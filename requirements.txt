@@ -18,12 +18,13 @@ onnxruntime==1.20.1
 
 # RAG / LangChain (versi lentur biar cocok Python 3.12)
 langchain>=0.3.14
-langchain-core>=0.3.29
+langchain-core>=0.3.29,<1.0.0  # >=1.0 butuh langchain 1.x; kunci di 0.3.x
 langchain-community>=0.3.14
 langchain-openai>=0.2.14
 langchain-huggingface>=0.1.2
 langchain-text-splitters>=0.3.0
 langchain-postgres>=0.0.10
+langgraph==0.2.28  # Fase 3 v2: agent (cocok langchain-core 0.3.x)
 
 # Embeddings lokal CPU (DeepSeek tidak ada embedding API)
 sentence-transformers==3.3.1
@@ -40,3 +41,4 @@ SQLAlchemy==2.0.36
 # Utils
 tqdm==4.67.1
 pytest==8.3.4
+python-pptx==1.0.2  # generator PPT portofolio (scripts/make_ppt.py)

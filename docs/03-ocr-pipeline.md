@@ -18,7 +18,7 @@ VLM seperti `baidu/Unlimited-OCR` butuh GPU NVIDIA + CUDA (bfloat16, context 32k
 
 3. **Tips kualitas foto kertas**
    - Sejajarkan kamera, cahaya rata, hindari bayangan.
-   - `use_angle_cls`-setara sudah内置 di RapidOCR untuk rotasi 0/90/180/270.
+    - `use_angle_cls` (klasifikasi arah) sudah built-in di RapidOCR untuk rotasi 0/90/180/270.
    - Kalau hasil jelek: naikkan DPI ke 400 atau crop margin sebelum ingest.
 
 ## Keterbatasan jujur (bagus untuk interview)

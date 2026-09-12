@@ -20,19 +20,30 @@
 - Extension `vector 0.8.6` wajib aktif (`CREATE EXTENSION IF NOT EXISTS vector`).
 - Koneksi: `DATABASE_URL` di `.env` → container `portoai-pgvector` di port **5433** (bukan 5432 yang dipakai Postgres bawaan OS).
 
-## 4. Retrieval — top-K similarity
-- Lokasi: `src/rag/chain.py::get_chain`
-- `as_retriever(search_kwargs={"k": TOP_K=5})` — cosine distance bawaan pgvector.
-- `format_docs()` menyusun konteks sebagai `[source hal. X]\n<isi>` dipisah `---` agar LLM bisa menyitir.
+## 4. Retrieval — hybrid vektor + FTS + RRF (v2)
+- Lokasi: `src/rag/hybrid.py::hybrid_search`
+- `vector_search(k=20)` via `get_vectorstore().similarity_search` (semantik: "total belanja berapa?").
+- `keyword_search(k=20)` via SQL `ts_rank(to_tsvector('simple', document), plainto_tsquery('simple', q))` + fallback `ILIKE` untuk kode aneh. Config `simple` dipilih karena tidak stemming (aman untuk nomor/kode) dan lowercase otomatis — ini yang menghapus hack multi-query lowercase di v1.
+- `rrf_fusion` (`1/(60+rank)`) menggabung keduanya tanpa tuning bobot → `top_k=RERANK_CANDIDATES=20`.
+- Index: `scripts/add_fts_index.sql` (GIN `tsvector('simple', document)` + trigram `document`). Idempoten, aman dijalankan ulang.
+- Dedup pakai **full content** sebagai key — `content[:120]` tabrakan karena chunk overlap 120 (bug yang sempat ketemu saat implementasi).
 
-## 5. Generation — grounded + sitasi
+## 5. Rerank — cross-encoder multilingual (v2)
+- Lokasi: `src/rag/rerank.py::rerank` — kandidat 20 → 5.
+- Model: `cross-encoder/mmarco-mMiniLMv2-L12-H384-v1` (multilingual, termasuk Indonesia), CPU ±100-150ms/doc. Hasil eksperimen: varian English-only `ms-marco-MiniLM` menggeser chunk bahasa Indonesia yang benar, jadi diganti multilingual.
+- Batasan jujur: query komposisional lintas halaman (chunk hal. 2 tidak menyebut nama subjek) tetap sulit untuk scorer apapun — diatasi di layer agent (rewrite + grade), bukan dengan model rerank lebih besar.
+
+## 6. Generation — agent grounded + sitasi (v2)
 - LLM: `ChatOpenAI(model=deepseek-v4-flash, base_url=https://api.deepseek.com/v1, temperature=0)` — lihat `src/rag/chain.py::get_llm`.
 - System prompt: jawab **hanya** dari konteks, bahasa mengikuti pertanyaan, kalau tidak ada → katakan tidak tahu, wajib sitasi `[source hal. X]`.
-- Pattern LangChain LCEL: `{"context": retriever|format_docs, "question": Passthrough} | Prompt | LLM | StrOutputParser`.
-- `query()` mengembalikan `{"answer", "sources": [{source, page}]}` agar UI/API bisa menampilkan bukti.
+- Graf LangGraph (`src/rag/graph.py`, `langgraph==0.2.28`): `router → retrieve → grade → generate/rewrite/no_answer`.
+  - `router`: sapaan/umum → jawab langsung tanpa retrieval (hemat cost); sisanya → RAG.
+  - `grade`: LLM menilai konteks cukup/tidak **sebelum** generate. Tidak cukup + rewrite tersisa → `rewrite` tulis ulang query jadi keyword lalu retrieve ulang (max `AGENT_MAX_REWRITE=1`). Tetap tidak cukup → pesan jujur "tidak tahu" + max 2 sumber.
+  - `query()` di `chain.py` memanggil `agent_answer()` dengan fallback hybrid langsung kalau graph error.
+- `query()` mengembalikan `{"answer", "sources": [{source, page}], "timings": {retrieve_ms, rerank_ms, llm_ms}, "route": "direct|hybrid_rerank_rag|rewrite_rag|no_answer"}` agar UI/API bisa menampilkan bukti + latensi.
 
-## 6. Yang belum (roadmap portofolio)
-- Reranker (cross-encoder) setelah top-20 → top-5.
-- Hybrid BM25 + vektor untuk istilah exact (nomor invoice, nama).
-- Evaluasi faithfulness + hit-rate otomatis (`eval/eval_rag.py` saat ini masih minimal).
-- LangGraph agent: router → retriever → verifier.
+## 7. Yang belum (roadmap lanjutan)
+- Evaluasi faithfulness + hit-rate otomatis (`eval/eval_rag.py` saat ini masih cek sitasi).
+- Ablasi chunking 400 vs 800 vs 1200 dengan grafik di README.
+- Enrichment chunk (prefix judul dokumen) untuk query komposisional lintas halaman.
+- Observability penuh (Langfuse/LangSmith) + `examples/` input/output.
