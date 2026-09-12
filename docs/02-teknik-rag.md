@@ -37,7 +37,7 @@
 - LLM: `ChatOpenAI(model=deepseek-v4-flash, base_url=https://api.deepseek.com/v1, temperature=0)` — lihat `src/rag/chain.py::get_llm`.
 - System prompt: jawab **hanya** dari konteks, bahasa mengikuti pertanyaan, kalau tidak ada → katakan tidak tahu, wajib sitasi `[source hal. X]`.
 - Graf LangGraph (`src/rag/graph.py`, `langgraph==0.2.28`): `router → retrieve → grade → generate/rewrite/no_answer`.
-  - `router`: sapaan/umum → jawab langsung tanpa retrieval (hemat cost); sisanya → RAG.
+  - `router`: HANYA sapaan/basa-basi/tanya kemampuan aplikasi → jawab langsung tanpa retrieval (hemat cost); SEMUA yang lain → RAG (kalau ragu, RAG). Pengetahuan umum/tutorial/kode yang tidak ada di dokumen berakhir di `no_answer`, bukan dijawab dari memori LLM.
   - `grade`: LLM menilai konteks cukup/tidak **sebelum** generate. Tidak cukup + rewrite tersisa → `rewrite` tulis ulang query jadi keyword lalu retrieve ulang (max `AGENT_MAX_REWRITE=1`). Tetap tidak cukup → pesan jujur "tidak tahu" + max 2 sumber.
   - `query()` di `chain.py` memanggil `agent_answer()` dengan fallback hybrid langsung kalau graph error.
 - `query()` mengembalikan `{"answer", "sources": [{source, page}], "timings": {retrieve_ms, rerank_ms, llm_ms}, "route": "direct|hybrid_rerank_rag|rewrite_rag|no_answer"}` agar UI/API bisa menampilkan bukti + latensi.

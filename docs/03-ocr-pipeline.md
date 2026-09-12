@@ -1,5 +1,12 @@
 # Pipeline OCR (CPU, tanpa GPU)
 
+## Jalur cepat: PDF digital tidak di-OCR
+Sejak update ini, `ingest_path` memeriksa teks embedded per halaman dulu (`pdf_page_texts`):
+- Halaman dengan teks ≥ `PDF_TEXT_MIN_CHARS=100` → dipakai langsung (`extract=text`, `ocr_conf=1.0`). 5 halaman digital selesai dalam <1 detik.
+- Hanya halaman tanpa teks (= hasil scan/foto) yang di-render 300 DPI + OCR (`extract=ocr`). PDF campuran didukung per halaman.
+- Foto JPG/PNG mentah selalu lewat OCR (tidak punya teks embedded).
+- Respons `/ingest` melaporkan perincian: `{"chunks", "pages_text", "pages_ocr"}`.
+
 ## Kenapa bukan Unlimited-OCR / VLM 3B?
 VLM seperti `baidu/Unlimited-OCR` butuh GPU NVIDIA + CUDA (bfloat16, context 32k, vLLM/SGLang). Untuk use-case **scan PDF + foto kertas → teks**, OCR klasik CPU sudah cukup dan jauh lebih murah. VLM baru layak kalau butuh parsing tabel/rumus/layout markdown yang kompleks.
 

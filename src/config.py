@@ -14,6 +14,7 @@ class Settings(BaseSettings):
 
     OCR_DPI: int = 300
     OCR_WORKERS: int = 4
+    PDF_TEXT_MIN_CHARS: int = 100
     CHUNK_SIZE: int = 800
     CHUNK_OVERLAP: int = 120
     TOP_K: int = 5

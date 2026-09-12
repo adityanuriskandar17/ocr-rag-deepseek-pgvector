@@ -13,8 +13,8 @@ flowchart LR
     subgraph Query["2. Tanya - agent (tiap query)"]
         direction TB
         G[Pertanyaan] --> R{Router}
-        R -->|sapaan/umum| Z[Direct answer]
-        R -->|butuh dokumen| H[Hybrid retrieve top-20]
+        R -->|sapaan/cara pakai| Z[Direct answer]
+        R -->|semua yg lain| H[Hybrid retrieve top-20]
         H --> RR[Rerank → top-5]
         RR --> GR{Grade cukup?}
         GR -->|ya| I[Generate + sitasi]
@@ -30,7 +30,7 @@ flowchart LR
 
 | Tahap | Input → Output | Kode |
 |---|---|---|
-| Ingest | `scan.pdf / foto.jpg` → PNG per halaman | `src/ingest/pdf_loader.py::pdf_to_images` |
+| Ingest | `scan.pdf` → teks digital langsung, atau render 300 DPI → PNG per halaman scan | `src/ingest/pdf_loader.py::pdf_page_texts`, `pdf_pages_to_images` |
 | OCR | PNG → teks + bbox + confidence | `src/ingest/ocr.py::ocr_image` |
 | Chunk | teks panjang → potongan 800 char | `src/ingest/chunker.py` |
 | Embed+Store | chunk → vektor 384-dim → pgvector | `src/rag/embed_store.py`, `src/ingest/pipeline.py` |
@@ -48,4 +48,4 @@ flowchart LR
 2. **DeepSeek OpenAI-compatible.** `ChatOpenAI` + `base_url=https://api.deepseek.com/v1`, model `deepseek-v4-flash` dikonfig via `.env`. Ganti model tanpa ubah kode.
 3. **pgvector di Docker port 5433.** Laptop sudah ada Postgres bawaan di 5432, jadi container dipindah agar tidak bentrok. Lihat `docs/05-setup-operasi.md`.
 4. **Grounding wajib + verifikasi pre-generate.** Prompt memaksa jawab hanya dari konteks + sitasi `[source hal. X]`, dan node `grade` menolak generate kalau konteks tidak mendukung → jawab jujur "tidak tahu". Lihat `docs/02-teknik-rag.md`.
-5. **Degradasi aman.** Reranker gagal load (offline) → pakai urutan hybrid. Agent error → fallback hybrid+rerank langsung. API tidak pernah 500 karena agent.
+5. **Degradasi aman.** Reranker gagal load (offline) → pakai urutan hybrid. Agent error → fallback hybrid+rerank langsung. Endpoint selalu balas JSON (termasuk saat error 500) agar UI tidak crash.

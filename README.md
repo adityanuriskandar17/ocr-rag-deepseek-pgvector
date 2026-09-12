@@ -4,7 +4,8 @@ Arsitektur yang nunjukin skill AI Engineer end-to-end, **tanpa butuh GPU**:
 
 ```
 PDF scan / foto kertas
-  -> PyMuPDF 300 DPI -> RapidOCR (ONNX CPU) -> teks + bbox/conf
+  -> PyMuPDF: teks digital langsung, atau render 300 DPI -> RapidOCR (ONNX CPU)
+  -> teks + bbox/conf
   -> Recursive chunk (800/120)
   -> HF embeddings lokal CPU (multilingual ID+EN)
   -> pgvector (Postgres) + index FTS

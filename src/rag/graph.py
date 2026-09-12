@@ -37,8 +37,10 @@ class AgentState(TypedDict, total=False):
 
 
 ROUTER_PROMPT = """Klasifikasikan pertanyaan pengguna ke SATU kata:
-- DIRECT: sapaan, basa-basi, atau pengetahuan umum yang TIDAK butuh dokumen (misal "halo", "siapa kamu", "apa itu python").
-- RAG: pertanyaan tentang isi dokumen/data yang di-upload (ciri: menyebut nama, angka, invoice, perusahaan, "dokumen ini", "berapa", "di mana", "siapa").
+- DIRECT: HANYA sapaan/basa-basi ("halo", "pagi") atau tanya kemampuan aplikasi ("kamu bisa apa", "cara pakai aplikasi ini").
+- RAG: SEMUA yang lain — termasuk pertanyaan pengetahuan umum, minta kode/tutorial, atau apapun tentang dokumen ("buatkan kode ocr", "apa itu python", "berapa total", nama/angka/invoice/perusahaan).
+
+Aturan: kalau ragu, pilih RAG. Aplikasi ini hanya boleh menjawab dari dokumen yang di-upload.
 
 Pertanyaan: {question}
 Jawab hanya: DIRECT atau RAG"""
@@ -83,8 +85,10 @@ def router_node(state: AgentState) -> dict:
 def direct_answer_node(state: AgentState) -> dict:
     t0 = time.perf_counter()
     answer = (_llm() | StrOutputParser()).invoke(
-        "Kamu asisten ramah berbahasa Indonesia. Jawab singkat (maks 3 kalimat). "
-        "Kalau ditanya soal dokumen, arahkan user untuk bertanya spesifik.\n\n"
+        "Kamu asisten tanya-jawab dokumen berbahasa Indonesia. Jawab singkat (maks 3 kalimat). "
+        "Kamu HANYA menjawab dari dokumen yang di-upload user — jangan memberi tutorial, kode, "
+        "atau pengetahuan umum. Kalau user minta hal di luar dokumen, arahkan untuk upload "
+        "dokumen dulu lalu tanya isinya.\n\n"
         f"Pertanyaan: {state['question']}"
     )
     return {
