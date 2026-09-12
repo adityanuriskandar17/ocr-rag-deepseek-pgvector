@@ -13,7 +13,10 @@ def get_embeddings():
         _embeddings = HuggingFaceEmbeddings(
             model_name=settings.EMBEDDING_MODEL,
             model_kwargs={"device": "cpu"},
-            encode_kwargs={"normalize_embeddings": True},
+            encode_kwargs={
+                "normalize_embeddings": True,
+                "batch_size": settings.EMBED_BATCH_SIZE,
+            },
         )
     return _embeddings
 
