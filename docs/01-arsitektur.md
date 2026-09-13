@@ -44,19 +44,40 @@ flowchart LR
 
 ## Peta konsep: mana RAG, mana LangChain, mana LangGraph
 
-Diagram di atas sengaja tidak melabeli library. Tiga istilah ini perannya beda:
+```mermaid
+flowchart LR
+    subgraph RAG["RAG = POLA KERJA"]
+        direction TB
+        subgraph LangGraph["LangGraph = PENGATUR ALUR"]
+            direction LR
+            A1{Router} -->|sapaan| A2[Jawab langsung]
+            A1 -->|lainnya| A3{Grade}
+            A3 -->|tidak| A4[Rewrite]
+            A3 -->|tetap tidak| A5[Jujur tidak tahu]
+        end
+        subgraph LangChain["LangChain = PERKAKAS"]
+            direction LR
+            B1[Chunk] --> B2[Embed] --> B3[Store] --> B4[Generate]
+        end
+        subgraph External["BUKAN LangChain"]
+            direction LR
+            C1[PyMuPDF] ~~~ C2[RapidOCR] ~~~ C3[Postgres FTS] ~~~ C4[Reranker] ~~~ C5[FastAPI]
+        end
+    end
+    A3 -->|ya| B4
+    A4 -.-> B3
+```
 
-- **RAG** = nama *pola* keseluruhan ("ambil konteks dari dokumen → tempel ke prompt → LLM menjawab"). Di diagram: `Embed MiniLM` + `pgvector + FTS` (menyiapkan bahan) dan `Hybrid retrieve` → `Rerank` → `Grade` → `Generate + sitasi` (memakai bahan). Bukan RAG: `Render`, `RapidOCR`, `Chunk` (persiapan data), `Router`/`Direct answer` (jalur pintas tanpa dokumen), `Rewrite` (manipulasi query).
-- **LangChain** = *perkakas* (library) yang dipakai di dalam node-node itu:
-  | Node diagram | Komponen LangChain | File |
-  |---|---|---|
-  | `Chunk 800/120` | `RecursiveCharacterTextSplitter` | `src/ingest/chunker.py` |
-  | `Embed MiniLM` | `HuggingFaceEmbeddings` (CPU, normalized) | `src/rag/embed_store.py` |
-  | `pgvector + FTS` | `PGVector` vectorstore (+ SQL FTS mentah via `psycopg`) | `src/rag/embed_store.py`, `src/rag/hybrid.py` |
-  | `Hybrid retrieve` | `similarity_search` + RRF manual | `src/rag/hybrid.py` |
-  | `Router/Grade/Rewrite/Generate` | `ChatOpenAI` (wrapper DeepSeek) + prompt + `StrOutputParser`, pola LCEL | `src/rag/graph.py`, `src/rag/chain.py` |
-- **LangGraph** = *otak/pengatur alur* (khusus kotak "Tanya - agent"): node `Router`, decision `Grade cukup?`, dan loop `Rewrite query → retrieve ulang`. Hidup di `src/rag/graph.py` (`langgraph==0.2.28`).
-- **Bukan LangChain sama sekali:** `Render 300 DPI` (PyMuPDF), `RapidOCR CPU` (ONNX Runtime), index GIN/trigram (Postgres murni), cross-encoder rerank (`sentence-transformers` langsung), FastAPI, Streamlit.
+| Istilah | Peran | Analogi |
+|---|---|---|
+| **RAG** | Pola kerja: ambil konteks dari dokumen → tempel ke prompt → LLM menjawab | Resep masakan |
+| **LangChain** | Perkakas: chunker, embedder, vectorstore, prompt template, LLM wrapper | Peralatan dapur |
+| **LangGraph** | Pengatur alur: router, grade, rewrite, loop | Koki yang mengatur langkah |
+| **Bukan LangChain** | Render PDF, OCR, FTS database, reranker, API server, UI | Bahan baku + meja dapur |
+
+- **LangChain** = library yang menyediakan komponen: `RecursiveCharacterTextSplitter`, `HuggingFaceEmbeddings`, `PGVector`, `ChatOpenAI` + `Prompt` + `StrOutputParser`.
+- **LangGraph** = library pengatur alur agent: `Router`, `Grade`, `Rewrite` loop. Hidup di `src/rag/graph.py` (`langgraph==0.2.28`).
+- **Bukan LangChain:** `PyMuPDF` (render 300 DPI), `RapidOCR` (ONNX CPU), `psycopg` (FTS mentah), `sentence-transformers` (reranker), `FastAPI`, `Streamlit`.
 
 Satu kalimat: LangChain menyediakan perkakasnya, LangGraph mengatur alurnya, RAG adalah nama pola keseluruhannya.
 
